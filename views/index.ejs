@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Trend Ride</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <header class="header">
+    <h1>🚖 Trend Ride</h1>
+    <p>Book smart. Ride fast.</p>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <input id="source" type="text" placeholder="Pickup location" />
+      <input id="destination" type="text" placeholder="Drop location" />
+
+      <div class="ride-types">
+        <label><input type="radio" name="ride" value="auto" checked /> Auto</label>
+        <label><input type="radio" name="ride" value="bike" /> Bike</label>
+        <label><input type="radio" name="ride" value="car" /> Car</label>
+      </div>
+
+      <button id="calcBtn">Calculate Route & Fare</button>
+
+      <div class="result">
+        <p>Distance: <span id="distance">-</span></p>
+        <p>Fare: <span id="fare">-</span></p>
+      </div>
+
+      <button id="bookBtn" class="book">Book Ride</button>
+    </div>
+
+    <div id="map"></div>
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/js/map.js"></script>
+</body>
+</html>
