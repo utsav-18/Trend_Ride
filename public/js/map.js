@@ -1,33 +1,86 @@
-let map = L.map("map").setView([20.5937, 78.9629], 5);
+let map = L.map("map").setView([25.0961, 85.3131], 6); // Bihar focus
 
-// OpenStreetMap tiles
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "© OpenStreetMap contributors"
+  attribution: "© OpenStreetMap"
 }).addTo(map);
 
 let routeLayer;
 let distanceKm = 0;
+let debounceTimer;
 
-// simple geocoding using Nominatim
-async function geocode(place) {
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&q=${place}`
-  );
-  const data = await res.json();
-  return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+/* ================= IMPROVED AUTOCOMPLETE ================= */
+async function fetchSuggestions(query, listEl, inputEl) {
+  if (query.length < 3) {
+    listEl.innerHTML = "";
+    return;
+  }
+
+  clearTimeout(debounceTimer);
+
+  debounceTimer = setTimeout(async () => {
+    const url =
+      `https://nominatim.openstreetmap.org/search?` +
+      `q=${encodeURIComponent(query)}` +
+      `&format=json` +
+      `&limit=6` +
+      `&countrycodes=in` +
+      `&viewbox=68.1,37.6,97.4,6.7` +
+      `&bounded=1`;
+
+    const res = await fetch(url, {
+      headers: { "Accept-Language": "en" }
+    });
+
+    const data = await res.json();
+    listEl.innerHTML = "";
+
+    if (!data.length) {
+      listEl.innerHTML = "<li>No results found</li>";
+      return;
+    }
+
+    data.forEach(place => {
+      const li = document.createElement("li");
+      li.textContent = place.display_name;
+
+      li.onclick = () => {
+        inputEl.value = place.display_name;
+        inputEl.dataset.lat = place.lat;
+        inputEl.dataset.lon = place.lon;
+        listEl.innerHTML = "";
+      };
+
+      listEl.appendChild(li);
+    });
+  }, 400);
 }
 
+const sourceInput = document.getElementById("source");
+const destInput = document.getElementById("destination");
+const sourceList = document.getElementById("source-suggestions");
+const destList = document.getElementById("destination-suggestions");
+
+sourceInput.addEventListener("input", () =>
+  fetchSuggestions(sourceInput.value, sourceList, sourceInput)
+);
+
+destInput.addEventListener("input", () =>
+  fetchSuggestions(destInput.value, destList, destInput)
+);
+
+/* ================= ROUTE + FARE ================= */
 document.getElementById("calcBtn").addEventListener("click", async () => {
-  const source = document.getElementById("source").value;
-  const destination = document.getElementById("destination").value;
-  const rideType = document.querySelector("input[name='ride']:checked").value;
+  if (!sourceInput.dataset.lat || !destInput.dataset.lat) {
+    alert("Select locations from suggestions");
+    return;
+  }
 
-  if (!source || !destination) return alert("Enter locations");
+  const srcLat = sourceInput.dataset.lat;
+  const srcLon = sourceInput.dataset.lon;
+  const dstLat = destInput.dataset.lat;
+  const dstLon = destInput.dataset.lon;
 
-  const src = await geocode(source);
-  const dest = await geocode(destination);
-
-  const url = `https://router.project-osrm.org/route/v1/driving/${src[1]},${src[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson`;
+  const url = `https://router.project-osrm.org/route/v1/driving/${srcLon},${srcLat};${dstLon},${dstLat}?overview=full&geometries=geojson`;
 
   const res = await fetch(url);
   const data = await res.json();
@@ -35,33 +88,30 @@ document.getElementById("calcBtn").addEventListener("click", async () => {
   const route = data.routes[0];
   distanceKm = (route.distance / 1000).toFixed(2);
 
-  const prices = { auto: 10, bike: 7, car: 15 };
-  const fare = Math.round(distanceKm * prices[rideType]);
+  const rideType = document.querySelector("input[name='ride']:checked").value;
+  const rates = { auto: 10, bike: 7, car: 15 };
+  const fare = Math.round(distanceKm * rates[rideType]);
 
   document.getElementById("distance").innerText = `${distanceKm} km`;
   document.getElementById("fare").innerText = `₹${fare}`;
 
   if (routeLayer) map.removeLayer(routeLayer);
-
   routeLayer = L.geoJSON(route.geometry).addTo(map);
   map.fitBounds(routeLayer.getBounds());
 });
 
+/* ================= BOOK RIDE ================= */
 document.getElementById("bookBtn").addEventListener("click", async () => {
-  const source = document.getElementById("source").value;
-  const destination = document.getElementById("destination").value;
-  const rideType = document.querySelector("input[name='ride']:checked").value;
-
   if (!distanceKm) return alert("Calculate route first");
 
   const res = await fetch("/book-ride", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      source,
-      destination,
+      source: sourceInput.value,
+      destination: destInput.value,
       distance: distanceKm,
-      rideType
+      rideType: document.querySelector("input[name='ride']:checked").value
     })
   });
 
