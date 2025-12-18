@@ -131,28 +131,48 @@ document.getElementById("calcBtn").addEventListener("click", async () => {
 
   } catch (err) {
     console.error(err);
-    alert("Unable to calculate route. Try nearby landmark or railway station.");
+    alert("Unable to calculate route. Try nearby landmark.");
   }
 });
 
-/* ================= BOOK RIDE ================= */
-document.getElementById("bookBtn").addEventListener("click", async () => {
+/* ================= BOOK RIDE → WHATSAPP ================= */
+document.getElementById("bookBtn").addEventListener("click", () => {
   if (!distanceKm) {
     alert("Calculate route first");
     return;
   }
 
-  const res = await fetch("/book-ride", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      source: sourceInput.value,
-      destination: destInput.value,
-      distance: distanceKm,
-      rideType: document.querySelector("input[name='ride']:checked").value
-    })
-  });
+  const userName = document.getElementById("userName").value.trim();
+  const userPhone = document.getElementById("userPhone").value.trim();
 
-  const data = await res.json();
-  alert(data.message);
+  if (!userName || !userPhone) {
+    alert("Please enter your name and phone number");
+    return;
+  }
+
+  const rideType = document.querySelector("input[name='ride']:checked").value;
+  const rates = { auto: 10, bike: 7, car: 15 };
+  const fare = Math.round(distanceKm * rates[rideType]);
+
+  const message =
+` *Trend Ride – Booking Request*
+
+ Name: ${userName}
+ Phone: ${userPhone}
+
+ Pickup: ${sourceInput.value}
+ Drop: ${destInput.value}
+
+ Ride Type: ${rideType.toUpperCase()}
+ Distance: ${distanceKm} km
+ Estimated Fare: ₹${fare}
+
+ Please contact the customer to confirm.`;
+
+  const whatsappNumber = "7903541905"; // 🔴 CHANGE TO YOUR NUMBER
+
+  const whatsappURL =
+    `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+
+  window.open(whatsappURL, "_blank");
 });

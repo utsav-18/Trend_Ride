@@ -11,11 +11,7 @@
 <body>
 
 <header class="header" style="display:flex;align-items:center;gap:12px;">
-  <img 
-    src="/images/logo.png" 
-    alt="Trend Ride Logo" 
-    style="height:42px;"
-  />
+  <img src="/images/logo.png" alt="Trend Ride Logo" />
   <div>
     <h1 style="margin:0;">Trend Ride</h1>
     <p style="margin:0;font-size:14px;">
@@ -27,20 +23,28 @@
 <main class="container">
   <div class="card">
 
+    <!-- LOCATIONS -->
     <input id="source" placeholder="Pickup location" autocomplete="off">
     <ul id="source-suggestions" class="suggestions"></ul>
 
     <input id="destination" placeholder="Drop location" autocomplete="off">
     <ul id="destination-suggestions" class="suggestions"></ul>
 
+    <!-- RIDE TYPE -->
     <div class="ride-types">
       <label><input type="radio" name="ride" value="auto" checked> Auto</label>
       <label><input type="radio" name="ride" value="bike"> Bike</label>
       <label><input type="radio" name="ride" value="car"> Car</label>
     </div>
 
+    <!-- USER DETAILS -->
+    <input id="userName" placeholder="Your Name" autocomplete="off">
+    <input id="userPhone" placeholder="Your Phone Number" autocomplete="off">
+
+    <!-- ACTION -->
     <button id="calcBtn">Calculate Route & Fare</button>
 
+    <!-- RESULT -->
     <div class="result">
       <p>Distance: <span id="distance">-</span></p>
       <p>Fare: <span id="fare">-</span></p>
