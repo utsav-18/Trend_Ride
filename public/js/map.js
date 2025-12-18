@@ -1,4 +1,4 @@
-let map = L.map("map").setView([25.0961, 85.3131], 6); // Bihar focus
+let map = L.map("map").setView([25.0961, 85.3131], 6);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap"
@@ -8,7 +8,7 @@ let routeLayer;
 let distanceKm = 0;
 let debounceTimer;
 
-/* ================= IMPROVED AUTOCOMPLETE ================= */
+/* ================= AUTOCOMPLETE ================= */
 async function fetchSuggestions(query, listEl, inputEl) {
   if (query.length < 3) {
     listEl.innerHTML = "";
@@ -21,11 +21,7 @@ async function fetchSuggestions(query, listEl, inputEl) {
     const url =
       `https://nominatim.openstreetmap.org/search?` +
       `q=${encodeURIComponent(query)}` +
-      `&format=json` +
-      `&limit=6` +
-      `&countrycodes=in` +
-      `&viewbox=68.1,37.6,97.4,6.7` +
-      `&bounded=1`;
+      `&format=json&limit=6&countrycodes=in`;
 
     const res = await fetch(url, {
       headers: { "Accept-Language": "en" }
@@ -68,41 +64,83 @@ destInput.addEventListener("input", () =>
   fetchSuggestions(destInput.value, destList, destInput)
 );
 
-/* ================= ROUTE + FARE ================= */
-document.getElementById("calcBtn").addEventListener("click", async () => {
-  if (!sourceInput.dataset.lat || !destInput.dataset.lat) {
-    alert("Select locations from suggestions");
-    return;
+/* ================= SAFE GEOCODING ================= */
+async function getCoords(inputEl) {
+  if (inputEl.dataset.lat && inputEl.dataset.lon) {
+    return {
+      lat: parseFloat(inputEl.dataset.lat),
+      lon: parseFloat(inputEl.dataset.lon)
+    };
   }
 
-  const srcLat = sourceInput.dataset.lat;
-  const srcLon = sourceInput.dataset.lon;
-  const dstLat = destInput.dataset.lat;
-  const dstLon = destInput.dataset.lon;
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?` +
+    `q=${encodeURIComponent(inputEl.value)}` +
+    `&format=json&limit=1&countrycodes=in`
+  );
 
-  const url = `https://router.project-osrm.org/route/v1/driving/${srcLon},${srcLat};${dstLon},${dstLat}?overview=full&geometries=geojson`;
-
-  const res = await fetch(url);
   const data = await res.json();
 
-  const route = data.routes[0];
-  distanceKm = (route.distance / 1000).toFixed(2);
+  if (!data.length) {
+    throw new Error("Location not found");
+  }
 
-  const rideType = document.querySelector("input[name='ride']:checked").value;
-  const rates = { auto: 10, bike: 7, car: 15 };
-  const fare = Math.round(distanceKm * rates[rideType]);
+  return {
+    lat: parseFloat(data[0].lat),
+    lon: parseFloat(data[0].lon)
+  };
+}
 
-  document.getElementById("distance").innerText = `${distanceKm} km`;
-  document.getElementById("fare").innerText = `₹${fare}`;
+/* ================= ROUTE + FARE ================= */
+document.getElementById("calcBtn").addEventListener("click", async () => {
+  try {
+    if (!sourceInput.value || !destInput.value) {
+      alert("Please enter both locations");
+      return;
+    }
 
-  if (routeLayer) map.removeLayer(routeLayer);
-  routeLayer = L.geoJSON(route.geometry).addTo(map);
-  map.fitBounds(routeLayer.getBounds());
+    const src = await getCoords(sourceInput);
+    const dst = await getCoords(destInput);
+
+    const osrmUrl =
+      `https://router.project-osrm.org/route/v1/driving/` +
+      `${src.lon},${src.lat};${dst.lon},${dst.lat}` +
+      `?overview=full&geometries=geojson`;
+
+    const res = await fetch(osrmUrl);
+    const data = await res.json();
+
+    if (data.code !== "Ok" || !data.routes || !data.routes.length) {
+      alert("No road route found between these locations");
+      return;
+    }
+
+    const route = data.routes[0];
+    distanceKm = (route.distance / 1000).toFixed(2);
+
+    const rideType = document.querySelector("input[name='ride']:checked").value;
+    const rates = { auto: 10, bike: 7, car: 15 };
+    const fare = Math.round(distanceKm * rates[rideType]);
+
+    document.getElementById("distance").innerText = `${distanceKm} km`;
+    document.getElementById("fare").innerText = `₹${fare}`;
+
+    if (routeLayer) map.removeLayer(routeLayer);
+    routeLayer = L.geoJSON(route.geometry).addTo(map);
+    map.fitBounds(routeLayer.getBounds());
+
+  } catch (err) {
+    console.error(err);
+    alert("Unable to calculate route. Try nearby landmark or railway station.");
+  }
 });
 
 /* ================= BOOK RIDE ================= */
 document.getElementById("bookBtn").addEventListener("click", async () => {
-  if (!distanceKm) return alert("Calculate route first");
+  if (!distanceKm) {
+    alert("Calculate route first");
+    return;
+  }
 
   const res = await fetch("/book-ride", {
     method: "POST",
