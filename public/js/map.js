@@ -21,8 +21,9 @@ const RIDE_SYMBOLS = {
   car: "🚗"
 };
 
-/* ========== GOOGLE MAP INIT ========== */
-function initMap() {
+/* ========== GOOGLE MAP INIT (GLOBAL) ========== */
+/* IMPORTANT: Must be attached to window */
+window.initMap = function () {
   map = new google.maps.Map(document.getElementById("map"), {
     center: { lat: 25.0961, lng: 85.3131 },
     zoom: 6
@@ -40,7 +41,7 @@ function initMap() {
     document.getElementById("destination"),
     { componentRestrictions: { country: "in" } }
   );
-}
+};
 
 /* ========== ROUTE + FARE ========== */
 document.getElementById("calcBtn").addEventListener("click", () => {
@@ -127,9 +128,7 @@ document.getElementById("bookBtn").addEventListener("click", () => {
   const rideType =
     document.querySelector("input[name='ride']:checked").value;
 
-  const rideSymbol = RIDE_SYMBOLS[rideType];
-
-  /* ✅ GOOGLE MAPS DIRECTION LINK */
+  /* GOOGLE MAPS DIRECTION LINK */
   const mapLink =
     `https://www.google.com/maps/dir/?api=1` +
     `&origin=${encodeURIComponent(source)}` +
@@ -139,17 +138,17 @@ document.getElementById("bookBtn").addEventListener("click", () => {
   const message =
 `*Trend Ride – Booking Request*
 
- Name: ${userName}
- Phone: ${userPhone}
+Name: ${userName}
+Phone: ${userPhone}
 
- Pickup: *${source}*
- Drop: *${destination}*
+Pickup: *${source}*
+Drop: *${destination}*
 
- Ride Type: ${rideType.toUpperCase()}
- Distance: *${distanceKm} km*
- Estimated Fare: *₹${calculatedFare}*
+Ride Type: ${rideType.toUpperCase()}
+Distance: *${distanceKm} km*
+Estimated Fare: *₹${calculatedFare}*
 
- Google Maps Route:
+Google Maps Route:
 ${mapLink}
 
 Please contact the customer to confirm.`;
