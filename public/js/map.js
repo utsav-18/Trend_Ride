@@ -119,7 +119,7 @@ document.getElementById("calcBtn").addEventListener("click", async () => {
     distanceKm = (route.distance / 1000).toFixed(2);
 
     const rideType = document.querySelector("input[name='ride']:checked").value;
-    const rates = { auto: 10, bike: 7, car: 15 };
+    const rates = { auto: 17, bike: 14, car: 20 };
     const fare = Math.round(distanceKm * rates[rideType]);
 
     document.getElementById("distance").innerText = `${distanceKm} km`;
