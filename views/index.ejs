@@ -5,7 +5,6 @@
   <title>Trend Ride</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -15,7 +14,7 @@
   <div>
     <h1 style="margin:0;">Trend Ride</h1>
     <p style="margin:0;font-size:14px;">
-      Free ride booking demo using OpenStreetMap
+      Fast, reliable rides with live route tracking
     </p>
   </div>
 </header>
@@ -24,39 +23,80 @@
   <div class="card">
 
     <!-- LOCATIONS -->
-    <input id="source" placeholder="Pickup location" autocomplete="off">
-    <ul id="source-suggestions" class="suggestions"></ul>
+    <input
+      id="source"
+      placeholder="📍 Pickup location"
+      autocomplete="off"
+    >
 
-    <input id="destination" placeholder="Drop location" autocomplete="off">
-    <ul id="destination-suggestions" class="suggestions"></ul>
+    <input
+      id="destination"
+      placeholder="📍 Drop location"
+      autocomplete="off"
+    >
 
     <!-- RIDE TYPE -->
     <div class="ride-types">
-      <label><input type="radio" name="ride" value="auto" checked> Auto</label>
-      <label><input type="radio" name="ride" value="bike"> Bike</label>
-      <label><input type="radio" name="ride" value="car"> Car</label>
+      <label>
+        <input type="radio" name="ride" value="auto" checked>
+         Auto
+      </label>
+
+      <label>
+        <input type="radio" name="ride" value="bike">
+         Bike
+      </label>
+
+      <label>
+        <input type="radio" name="ride" value="car">
+         Car
+      </label>
     </div>
 
     <!-- USER DETAILS -->
-    <input id="userName" placeholder="Your Name" autocomplete="off">
-    <input id="userPhone" placeholder="Your Phone Number" autocomplete="off">
+    <input
+      id="userName"
+      placeholder="👤 Your Name"
+      autocomplete="off"
+    >
+
+    <input
+      id="userPhone"
+      type="tel"
+      placeholder="📞 10-digit mobile number"
+      inputmode="numeric"
+      pattern="[6-9][0-9]{9}"
+      maxlength="10"
+      autocomplete="off"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"
+    >
 
     <!-- ACTION -->
-    <button id="calcBtn">Calculate Route & Fare</button>
+    <button id="calcBtn">
+      🧭 Calculate Route & Fare
+    </button>
 
     <!-- RESULT -->
     <div class="result">
-      <p>Distance: <span id="distance">-</span></p>
-      <p>Fare: <span id="fare">-</span></p>
+      <p>📏 Distance: <span id="distance">-</span></p>
+      <p>💰 Fare: <span id="fare">-</span></p>
     </div>
 
-    <button id="bookBtn" class="book">Book Ride</button>
+    <button id="bookBtn" class="book">
+      📲 Book Ride
+    </button>
   </div>
 
   <div id="map"></div>
 </main>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- GOOGLE MAPS + PLACES -->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=<%= googleMapsKey %>&libraries=places&callback=initMap"
+  async
+  defer>
+</script>
+
 <script src="/js/map.js"></script>
 </body>
 </html>

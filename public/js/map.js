@@ -1,178 +1,161 @@
-let map = L.map("map").setView([25.0961, 85.3131], 6);
+let map;
+let directionsService;
+let directionsRenderer;
+let sourceAutocomplete;
+let destinationAutocomplete;
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "© OpenStreetMap"
-}).addTo(map);
-
-let routeLayer;
 let distanceKm = 0;
-let debounceTimer;
+let calculatedFare = 0;
 
-/* ================= AUTOCOMPLETE ================= */
-async function fetchSuggestions(query, listEl, inputEl) {
-  if (query.length < 3) {
-    listEl.innerHTML = "";
-    return;
-  }
+/* ========= RATES ========= */
+const RATES = {
+  auto: 17,
+  bike: 14,
+  car: 20
+};
 
-  clearTimeout(debounceTimer);
+/* ========= RIDE SYMBOLS ========= */
+const RIDE_SYMBOLS = {
+  auto: "🚕",
+  bike: "🏍",
+  car: "🚗"
+};
 
-  debounceTimer = setTimeout(async () => {
-    const url =
-      `https://nominatim.openstreetmap.org/search?` +
-      `q=${encodeURIComponent(query)}` +
-      `&format=json&limit=6&countrycodes=in`;
+/* ========== GOOGLE MAP INIT ========== */
+function initMap() {
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: 25.0961, lng: 85.3131 },
+    zoom: 6
+  });
 
-    const res = await fetch(url, {
-      headers: { "Accept-Language": "en" }
-    });
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer({ map });
 
-    const data = await res.json();
-    listEl.innerHTML = "";
-
-    if (!data.length) {
-      listEl.innerHTML = "<li>No results found</li>";
-      return;
-    }
-
-    data.forEach(place => {
-      const li = document.createElement("li");
-      li.textContent = place.display_name;
-
-      li.onclick = () => {
-        inputEl.value = place.display_name;
-        inputEl.dataset.lat = place.lat;
-        inputEl.dataset.lon = place.lon;
-        listEl.innerHTML = "";
-      };
-
-      listEl.appendChild(li);
-    });
-  }, 400);
-}
-
-const sourceInput = document.getElementById("source");
-const destInput = document.getElementById("destination");
-const sourceList = document.getElementById("source-suggestions");
-const destList = document.getElementById("destination-suggestions");
-
-sourceInput.addEventListener("input", () =>
-  fetchSuggestions(sourceInput.value, sourceList, sourceInput)
-);
-
-destInput.addEventListener("input", () =>
-  fetchSuggestions(destInput.value, destList, destInput)
-);
-
-/* ================= SAFE GEOCODING ================= */
-async function getCoords(inputEl) {
-  if (inputEl.dataset.lat && inputEl.dataset.lon) {
-    return {
-      lat: parseFloat(inputEl.dataset.lat),
-      lon: parseFloat(inputEl.dataset.lon)
-    };
-  }
-
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?` +
-    `q=${encodeURIComponent(inputEl.value)}` +
-    `&format=json&limit=1&countrycodes=in`
+  sourceAutocomplete = new google.maps.places.Autocomplete(
+    document.getElementById("source"),
+    { componentRestrictions: { country: "in" } }
   );
 
-  const data = await res.json();
-
-  if (!data.length) {
-    throw new Error("Location not found");
-  }
-
-  return {
-    lat: parseFloat(data[0].lat),
-    lon: parseFloat(data[0].lon)
-  };
+  destinationAutocomplete = new google.maps.places.Autocomplete(
+    document.getElementById("destination"),
+    { componentRestrictions: { country: "in" } }
+  );
 }
 
-/* ================= ROUTE + FARE ================= */
-document.getElementById("calcBtn").addEventListener("click", async () => {
-  try {
-    if (!sourceInput.value || !destInput.value) {
-      alert("Please enter both locations");
-      return;
-    }
+/* ========== ROUTE + FARE ========== */
+document.getElementById("calcBtn").addEventListener("click", () => {
+  const source = document.getElementById("source").value.trim();
+  const destination = document.getElementById("destination").value.trim();
 
-    const src = await getCoords(sourceInput);
-    const dst = await getCoords(destInput);
-
-    const osrmUrl =
-      `https://router.project-osrm.org/route/v1/driving/` +
-      `${src.lon},${src.lat};${dst.lon},${dst.lat}` +
-      `?overview=full&geometries=geojson`;
-
-    const res = await fetch(osrmUrl);
-    const data = await res.json();
-
-    if (data.code !== "Ok" || !data.routes || !data.routes.length) {
-      alert("No road route found between these locations");
-      return;
-    }
-
-    const route = data.routes[0];
-    distanceKm = (route.distance / 1000).toFixed(2);
-
-    const rideType = document.querySelector("input[name='ride']:checked").value;
-    const rates = { auto: 17, bike: 14, car: 20 };
-    const fare = Math.round(distanceKm * rates[rideType]);
-
-    document.getElementById("distance").innerText = `${distanceKm} km`;
-    document.getElementById("fare").innerText = `₹${fare}`;
-
-    if (routeLayer) map.removeLayer(routeLayer);
-    routeLayer = L.geoJSON(route.geometry).addTo(map);
-    map.fitBounds(routeLayer.getBounds());
-
-  } catch (err) {
-    console.error(err);
-    alert("Unable to calculate route. Try nearby landmark.");
+  if (!source || !destination) {
+    alert("Please enter both pickup and drop locations");
+    return;
   }
+
+  directionsService.route(
+    {
+      origin: source,
+      destination: destination,
+      travelMode: google.maps.TravelMode.DRIVING
+    },
+    (result, status) => {
+      if (status !== "OK") {
+        alert("Unable to calculate route. Try nearby landmark.");
+        return;
+      }
+
+      directionsRenderer.setDirections(result);
+
+      const leg = result.routes[0].legs[0];
+      distanceKm = (leg.distance.value / 1000).toFixed(2);
+
+      const rideType =
+        document.querySelector("input[name='ride']:checked").value;
+
+      calculatedFare = Math.round(distanceKm * RATES[rideType]);
+
+      document.getElementById("distance").innerText = `${distanceKm} km`;
+      document.getElementById("fare").innerText = `₹${calculatedFare}`;
+    }
+  );
 });
 
-/* ================= BOOK RIDE → WHATSAPP ================= */
+/* ========== VALIDATION HELPERS ========== */
+function isValidName(name) {
+  return /^[A-Za-z ]{3,}$/.test(name);
+}
+
+function isValidPhone(phone) {
+  return /^[6-9]\d{9}$/.test(phone);
+}
+
+/* ========== BOOK RIDE → WHATSAPP (WITH MAP LINK) ========== */
 document.getElementById("bookBtn").addEventListener("click", () => {
-  if (!distanceKm) {
-    alert("Calculate route first");
+  if (!distanceKm || !calculatedFare) {
+    alert("Please calculate route and fare first");
     return;
   }
 
-  const userName = document.getElementById("userName").value.trim();
-  const userPhone = document.getElementById("userPhone").value.trim();
+  const nameInput = document.getElementById("userName");
+  const phoneInput = document.getElementById("userPhone");
 
-  if (!userName || !userPhone) {
-    alert("Please enter your name and phone number");
+  const userName = nameInput.value.trim();
+  const userPhone = phoneInput.value.trim();
+
+  nameInput.style.borderColor = "";
+  phoneInput.style.borderColor = "";
+
+  let valid = true;
+
+  if (!isValidName(userName)) {
+    nameInput.style.borderColor = "red";
+    valid = false;
+  }
+
+  if (!isValidPhone(userPhone)) {
+    phoneInput.style.borderColor = "red";
+    valid = false;
+  }
+
+  if (!valid) {
+    alert("Please enter a valid name and 10-digit phone number");
     return;
   }
 
-  const rideType = document.querySelector("input[name='ride']:checked").value;
-  const rates = { auto: 10, bike: 7, car: 15 };
-  const fare = Math.round(distanceKm * rates[rideType]);
+  const source = document.getElementById("source").value;
+  const destination = document.getElementById("destination").value;
+  const rideType =
+    document.querySelector("input[name='ride']:checked").value;
+
+  const rideSymbol = RIDE_SYMBOLS[rideType];
+
+  /* ✅ GOOGLE MAPS DIRECTION LINK */
+  const mapLink =
+    `https://www.google.com/maps/dir/?api=1` +
+    `&origin=${encodeURIComponent(source)}` +
+    `&destination=${encodeURIComponent(destination)}` +
+    `&travelmode=driving`;
 
   const message =
-` *Trend Ride – Booking Request*
+`*Trend Ride – Booking Request*
 
  Name: ${userName}
  Phone: ${userPhone}
 
- Pickup: ${sourceInput.value}
- Drop: ${destInput.value}
+ Pickup: *${source}*
+ Drop: *${destination}*
 
  Ride Type: ${rideType.toUpperCase()}
- Distance: ${distanceKm} km
- Estimated Fare: ₹${fare}
+ Distance: *${distanceKm} km*
+ Estimated Fare: *₹${calculatedFare}*
 
- Please contact the customer to confirm.`;
+ Google Maps Route:
+${mapLink}
 
-  const whatsappNumber = "8971654394"; 
+Please contact the customer to confirm.`;
 
   const whatsappURL =
-    `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    `https://wa.me/918971654394?text=${encodeURIComponent(message)}`;
 
   window.open(whatsappURL, "_blank");
 });

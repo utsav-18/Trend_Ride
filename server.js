@@ -1,33 +1,25 @@
+require("dotenv").config();   
+
 const express = require("express");
 const path = require("path");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
-
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 app.get("/", (req, res) => {
-  res.render("index");
-});
+  if (!process.env.GOOGLE_MAPS_API_KEY) {
+    console.error("❌ GOOGLE_MAPS_API_KEY not loaded from .env");
+  }
 
-app.post("/book-ride", (req, res) => {
-  const { source, destination, distance, rideType } = req.body;
-
-  const rates = { auto: 10, bike: 7, car: 15 };
-  const fare = Math.round(distance * rates[rideType]);
-
-  res.json({
-    success: true,
-    message: "Ride booked successfully 🚖",
-    data: { source, destination, distance, rideType, fare }
+  res.render("index", {
+    googleMapsKey: process.env.GOOGLE_MAPS_API_KEY
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`Trend Ride running → http://localhost:${PORT}`);
+  console.log(`http://localhost:${PORT}`);
 });
