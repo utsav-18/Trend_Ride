@@ -23,58 +23,37 @@
   <div class="card">
 
     <!-- LOCATIONS -->
-    <input
-      id="source"
-      placeholder="📍 Pickup location"
-      autocomplete="off"
-    >
-
-    <input
-      id="destination"
-      placeholder="📍 Drop location"
-      autocomplete="off"
-    >
+    <input id="source" placeholder="📍 Pickup location" autocomplete="off">
+    <input id="destination" placeholder="📍 Drop location" autocomplete="off">
 
     <!-- RIDE TYPE -->
     <div class="ride-types">
       <label>
-        <input type="radio" name="ride" value="auto" checked>
-         Auto
+        <input type="radio" name="ride" value="auto" checked> Auto
       </label>
-
       <label>
-        <input type="radio" name="ride" value="bike">
-         Bike
+        <input type="radio" name="ride" value="bike"> Bike
       </label>
-
       <label>
-        <input type="radio" name="ride" value="car">
-         Car
+        <input type="radio" name="ride" value="car"> Car
       </label>
     </div>
 
     <!-- USER DETAILS -->
-    <input
-      id="userName"
-      placeholder="👤 Enter your Name"
-      autocomplete="off"
-    >
+    <input id="userName" placeholder="👤 Enter your Name" autocomplete="off">
 
     <input
       id="userPhone"
       type="tel"
       placeholder="📞 10-digit mobile number"
       inputmode="numeric"
-      pattern="[6-9][0-9]{9}"
       maxlength="10"
       autocomplete="off"
       oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"
     >
 
     <!-- ACTION -->
-    <button id="calcBtn">
-       Calculate Route & Fare
-    </button>
+    <button id="calcBtn">Calculate Route & Fare</button>
 
     <!-- RESULT -->
     <div class="result">
@@ -82,13 +61,20 @@
       <p>💰 Fare: <span id="fare">-</span></p>
     </div>
 
-    <button id="bookBtn" class="book">
-      📲 Book Ride
-    </button>
+    <button id="bookBtn" class="book">📲 Book Ride</button>
   </div>
 
   <div id="map"></div>
 </main>
+
+<!-- GLOBAL initMap -->
+<script>
+  function initMap() {
+    if (window._initMap) {
+      window._initMap();
+    }
+  }
+</script>
 
 <!-- GOOGLE MAPS + PLACES -->
 <script
@@ -96,7 +82,6 @@
   async
   defer>
 </script>
-
 
 <script src="/js/map.js"></script>
 </body>

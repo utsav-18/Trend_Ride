@@ -14,16 +14,8 @@ const RATES = {
   car: 20
 };
 
-/* ========= RIDE SYMBOLS ========= */
-const RIDE_SYMBOLS = {
-  auto: "🚕",
-  bike: "🏍",
-  car: "🚗"
-};
-
-/* ========== GOOGLE MAP INIT (GLOBAL) ========== */
-/* IMPORTANT: Must be attached to window */
-window.initMap = function () {
+/* ========== MAP LOGIC (CALLED BY HTML initMap) ========== */
+window._initMap = function () {
   map = new google.maps.Map(document.getElementById("map"), {
     center: { lat: 25.0961, lng: 85.3131 },
     zoom: 6
@@ -81,45 +73,26 @@ document.getElementById("calcBtn").addEventListener("click", () => {
   );
 });
 
-/* ========== VALIDATION HELPERS ========== */
+/* ========== VALIDATION ========= */
 function isValidName(name) {
   return /^[A-Za-z ]{3,}$/.test(name);
 }
-
 function isValidPhone(phone) {
   return /^[6-9]\d{9}$/.test(phone);
 }
 
-/* ========== BOOK RIDE → WHATSAPP (WITH MAP LINK) ========== */
+/* ========== BOOK RIDE → WHATSAPP WITH MAP LINK ========== */
 document.getElementById("bookBtn").addEventListener("click", () => {
   if (!distanceKm || !calculatedFare) {
     alert("Please calculate route and fare first");
     return;
   }
 
-  const nameInput = document.getElementById("userName");
-  const phoneInput = document.getElementById("userPhone");
+  const name = document.getElementById("userName").value.trim();
+  const phone = document.getElementById("userPhone").value.trim();
 
-  const userName = nameInput.value.trim();
-  const userPhone = phoneInput.value.trim();
-
-  nameInput.style.borderColor = "";
-  phoneInput.style.borderColor = "";
-
-  let valid = true;
-
-  if (!isValidName(userName)) {
-    nameInput.style.borderColor = "red";
-    valid = false;
-  }
-
-  if (!isValidPhone(userPhone)) {
-    phoneInput.style.borderColor = "red";
-    valid = false;
-  }
-
-  if (!valid) {
-    alert("Please enter a valid name and 10-digit phone number");
+  if (!isValidName(name) || !isValidPhone(phone)) {
+    alert("Enter valid name and 10-digit phone number");
     return;
   }
 
@@ -128,33 +101,29 @@ document.getElementById("bookBtn").addEventListener("click", () => {
   const rideType =
     document.querySelector("input[name='ride']:checked").value;
 
-  /* GOOGLE MAPS DIRECTION LINK */
   const mapLink =
-    `https://www.google.com/maps/dir/?api=1` +
-    `&origin=${encodeURIComponent(source)}` +
-    `&destination=${encodeURIComponent(destination)}` +
-    `&travelmode=driving`;
+    `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+      source
+    )}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
 
   const message =
 `*Trend Ride – Booking Request*
 
-Name: ${userName}
-Phone: ${userPhone}
+Name: ${name}
+Phone: ${phone}
 
 Pickup: *${source}*
 Drop: *${destination}*
 
 Ride Type: ${rideType.toUpperCase()}
 Distance: *${distanceKm} km*
-Estimated Fare: *₹${calculatedFare}*
+Fare: *₹${calculatedFare}*
 
-Google Maps Route:
-${mapLink}
+Route:
+${mapLink}`;
 
-Please contact the customer to confirm.`;
-
-  const whatsappURL =
-    `https://wa.me/918971654394?text=${encodeURIComponent(message)}`;
-
-  window.open(whatsappURL, "_blank");
+  window.open(
+    `https://wa.me/918971654394?text=${encodeURIComponent(message)}`,
+    "_blank"
+  );
 });
