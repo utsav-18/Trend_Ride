@@ -169,7 +169,7 @@ document.getElementById("bookBtn").addEventListener("click", () => {
 
  Please contact the customer to confirm.`;
 
-  const whatsappNumber = "8971654394"; // 
+  const whatsappNumber = "8971654394"; 
 
   const whatsappURL =
     `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
