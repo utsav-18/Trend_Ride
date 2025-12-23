@@ -127,3 +127,57 @@ ${mapLink}`;
     "_blank"
   );
 });
+
+
+{
+
+const currentLocationBtn = document.getElementById("currentLocationBtn");
+
+currentLocationBtn.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser");
+    return;
+  }
+
+  currentLocationBtn.innerText = "Fetching location...";
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      // Center map on user location
+      map.setCenter({ lat, lng });
+      map.setZoom(15);
+
+      // Marker
+      new google.maps.Marker({
+        position: { lat, lng },
+        map,
+        title: "Your current location"
+      });
+
+      // Reverse geocoding (lat/lng → address)
+      const geocoder = new google.maps.Geocoder();
+
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === "OK" && results[0]) {
+          document.getElementById("source").value =
+            results[0].formatted_address;
+        } else {
+          document.getElementById("source").value =
+            `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        }
+      });
+
+      currentLocationBtn.innerText = "📍 Use my current location";
+    },
+    (error) => {
+      alert("Unable to fetch location. Please allow location access.");
+      currentLocationBtn.innerText = "📍 Use my current location";
+    }
+  );
+});
+
+
+}
